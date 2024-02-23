@@ -84,7 +84,7 @@ class HFLM(LM):
         dtype: Optional[Union[str, torch.dtype]] = "auto",
         batch_size: Optional[Union[int, str]] = 1,
         max_batch_size: Optional[int] = 64,
-        trust_remote_code: Optional[bool] = True,
+        trust_remote_code: Optional[bool] = False,
         use_fast_tokenizer: Optional[bool] = True,
         # arguments used for splitting a model across GPUs naively.
         # only used if `parallelize=True`.
@@ -435,7 +435,7 @@ class HFLM(LM):
         pretrained: str,
         revision: Optional[str] = "main",
         dtype: Optional[Union[str, torch.dtype]] = "auto",
-        trust_remote_code: Optional[bool] = True,
+        trust_remote_code: Optional[bool] = False,
         # arguments used for splitting a model across GPUs naively.
         # only used if `parallelize=True`.
         # (accelerate naive PP (device_map) options)
@@ -746,8 +746,8 @@ class HFLM(LM):
         # for non-greedy gen. This should be reevaluated when considering beam search.
         if "do_sample" not in generation_kwargs:
             generation_kwargs["do_sample"] = False
-        # if do_sample is false, remove temperature from kwargs
-        if generation_kwargs["do_sample"] is False:
+        # if do_sample is false, remove temperature from `kwargs`
+        if generation_kwargs["do_sample"] == False:
             if "temperature" in generation_kwargs:
                 generation_kwargs.pop("temperature")
         # build stopping criteria
