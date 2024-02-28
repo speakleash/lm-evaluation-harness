@@ -37,6 +37,7 @@ def simple_evaluate(
     decontamination_ngrams_path=None,
     write_out: bool = False,
     log_samples: bool = True,
+    chat_template: bool = False,
     gen_kwargs: str = None,
 ):
     """Instantiate and evaluate a model on a list of tasks.
@@ -101,6 +102,7 @@ def simple_evaluate(
                 "batch_size": batch_size,
                 "max_batch_size": max_batch_size,
                 "device": device,
+                "use_chat_template": chat_template,
             },
         )
     else:

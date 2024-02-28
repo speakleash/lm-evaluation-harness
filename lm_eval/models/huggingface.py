@@ -97,7 +97,7 @@ class HFLM(LM):
         peft: Optional[str] = None,
         autogptq: Optional[Union[bool, str]] = False,
         # Chat templating settings
-        use_chat_template: Optional[bool] = True,
+        use_chat_template: Optional[bool] = False,
         # TODO: validate a template exists in tokenizer config, if this flag is true
         system_prompt: Optional[str] = None,
         **kwargs,
@@ -248,6 +248,7 @@ class HFLM(LM):
         self.system_prompt = system_prompt
         self.use_chat_template = use_chat_template
 
+        print('use_chat_template: ', use_chat_template)
         self._max_length = max_length
 
         self.batch_schedule = 1

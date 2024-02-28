@@ -136,6 +136,13 @@ def parse_eval_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--chat_template",
+        "-ct",
+        action="store_true",
+        default=False,
+        help="Add chat template to the prompt, works only for the Hugging Face models with configured chat templates in the tokenizer_config.json",
+    )
+    parser.add_argument(
         "--verbosity",
         "-v",
         type=str.upper,
@@ -242,6 +249,7 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
         check_integrity=args.check_integrity,
         write_out=args.write_out,
         log_samples=args.log_samples,
+        chat_template=args.chat_template,
         gen_kwargs=args.gen_kwargs,
     )
 
