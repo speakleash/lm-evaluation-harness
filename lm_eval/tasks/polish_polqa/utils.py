@@ -11,13 +11,20 @@ COLUMNS_TO_REMOVE=["question_id", "passage_title", "passage_wiki", "passage_id",
 
 def process_docs(dataset: datasets.Dataset):
     def _helper(doc):
+      return doc
+
+    used = set()
+
+    return dataset.remove_columns(COLUMNS_TO_REMOVE).filter(lambda example: (example['passage_text'],example['question']) not in used and (used.add((example['passage_text'],example['question'])) or True)).map(_helper)
+
+def process_docs_open(dataset: datasets.Dataset):
+    def _helper(doc):
       doc["answers"] = ast.literal_eval(doc['answers'])
       return doc
 
     used = set()
 
     return dataset.remove_columns(COLUMNS_TO_REMOVE).filter(lambda example: example["relevant"] and (example['passage_text'],example['question']) not in used and (used.add((example['passage_text'],example['question'])) or True)).map(_helper)
-
 
 def process_docs_closed(dataset: datasets.Dataset):
     def _helper(doc):
