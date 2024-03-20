@@ -50,6 +50,8 @@ def levenshtein(predictions, references):
     _prediction = predictions[0][0].lower()
     prediction_number = get_number(_prediction)
 
+    _prediction = re.sub('\. ?(</s>) ?$','',_prediction)
+
     for reference in references:
         reference_number = get_number(reference)
 
