@@ -1,0 +1,20 @@
+task: polish_polqa_reranking_multiple_choice
+dataset_path: ipipan/polqa
+dataset_name: null
+output_type: multiple_choice
+training_split: train
+validation_split: validation
+test_split: test
+process_docs: !function utils.process_docs
+doc_to_text: "Kontekst: {{passage_text}} \n Pytanie: {{question}} \n Czy kontekst jest relewantny dla pytania? \n Odpowiedz krótko \"Tak\" lub \"Nie\". Prawidłowa odpowiedź:"
+doc_to_target: "{{relevant|int}}"
+doc_to_choice: ["Nie", "Tak"]
+should_decontaminate: true
+doc_to_decontamination_query: "{{passage_text}} {{question}}"
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
