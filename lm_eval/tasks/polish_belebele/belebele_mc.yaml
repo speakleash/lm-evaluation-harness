@@ -1,0 +1,21 @@
+task: polish_belebele_mc
+dataset_path: facebook/belebele
+fewshot_split: pol_Latn
+test_split: pol_Latn
+fewshot_config:
+  sampler: first_n
+output_type: multiple_choice
+should_decontaminate: true
+doc_to_decontamination_query: "{{question}}"
+doc_to_text: "Fragment: \"{{flores_passage}}\"\nPytanie: \"{{question}}\"\nMożliwe odpowiedzi:\nA - {{mc_answer1}}\nB - {{mc_answer2}}\nC - {{mc_answer3}}\nD - {{mc_answer4}}\nPrawidłowa odpowiedź:"
+doc_to_choice: ["A", "B", "C", "D"]
+doc_to_target: "{{['1', '2', '3', '4'].index(correct_answer_num)}}"
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true
+metadata:
+  version: 0.0
