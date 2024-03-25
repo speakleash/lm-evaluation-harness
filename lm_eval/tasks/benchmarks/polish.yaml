@@ -18,3 +18,6 @@ task:
   - polish_cbd_regex
   - polish_klej_ner_multiple_choice
   - polish_klej_ner_regex
+  - polish_polqa_closed_book
+  - polish_polqa_open_book
+  - polish_polqa_reranking_multiple_choice
