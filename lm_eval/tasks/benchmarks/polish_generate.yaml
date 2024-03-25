@@ -9,3 +9,5 @@ task:
   - polish_psc_regex
   - polish_cbd_regex
   - polish_klej_ner_regex
+  - polish_polqa_closed_book
+  - polish_polqa_open_book
