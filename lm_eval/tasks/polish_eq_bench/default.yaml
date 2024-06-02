@@ -10,9 +10,9 @@ doc_to_text: "{{prompt}}\nPierwsze oceny:\n"
 generation_kwargs:
   do_sample: false
   temperature: 0.0
-  max_gen_toks: 80
   until:
     - "</s>"
+    - "[Koniec odpowiedzi]"
 metric_list:
   - metric: first_eqbench
     aggregation: mean
