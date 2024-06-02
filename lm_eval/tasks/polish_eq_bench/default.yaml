@@ -1,9 +1,17 @@
+output_type: generate_until
+validation_split: validation
+doc_to_target: reference_answer_fullscale
+metadata:
+  version: 2.1
 include: default.yaml
 task: polish_eq_bench
 dataset_path: speakleash/EQ-Bench-PL
 process_results: !function utils.score
 doc_to_text: "{{prompt}}\nPierwsze oceny:\n"
 generation_kwargs:
+  do_sample: false
+  temperature: 0.0
+  max_gen_toks: 80
   until:
     - "</s>"
 metric_list:
