@@ -20,13 +20,13 @@ def parse(text):
     first_pass_match = re.search(r'(.*?)Zmienione oceny:', text, re.DOTALL)
     if first_pass_match:
         first_pass_text = first_pass_match.group(1)
-        first_pass_answers = dict(re.findall(r'([ \w]+):\s+(\d+)', first_pass_text))
+        first_pass_answers = dict(re.findall(r'(\w+(?: \w+)*):\s+(\d+)', first_pass_text))
 
     # Extracting revised answers
     revised_match = re.search(r'Zmienione oceny:(.*?)$', text, re.DOTALL)
     if revised_match:
         revised_text = revised_match.group(1)
-        revised_answers = dict(list(re.findall(r'([ \w]+):\s+(\d+)', revised_text))[:4])
+        revised_answers = dict(list(re.findall(r'(\w+(?: \w+)*):\s+(\d+)', revised_text))[:4])
     return first_pass_answers, revised_answers
 
 def score(docs, results):
@@ -40,7 +40,7 @@ def score(docs, results):
     return scores
 
 def score_first(docs, results):
-    first_pass_answers = dict(list(re.findall(r'([ \w]+):\s+(\d+)', results[0]))[:4])
+    first_pass_answers = dict(list(re.findall(r'(\w+(?: \w+)*):\s+(\d+)', results[0]))[:4])
     reference = eval(docs["reference_answer"])
     first_pass_score = calculate_score(reference, first_pass_answers)
     scores= {'first_'+k: v for k, v in first_pass_score.items()}
