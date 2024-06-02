@@ -2,6 +2,10 @@ include: default.yaml
 task: polish_eq_bench
 dataset_path: speakleash/EQ-Bench-PL
 process_results: !function utils.score
+doc_to_text: "{{prompt}}\nPierwsze oceny:\n"
+generation_kwargs:
+  until:
+    - "</s>"
 metric_list:
   - metric: first_eqbench
     aggregation: mean
