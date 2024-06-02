@@ -3,6 +3,7 @@ task: polish_eq_bench
 dataset_path: speakleash/EQ-Bench-PL
 process_results: !function utils.score
 doc_to_text: "{{prompt}}\nPierwsze oceny:\n"
+doc_to_target: !function utils.doc_to_target
 generation_kwargs:
   until:
     - "</s>"
