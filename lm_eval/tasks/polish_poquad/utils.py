@@ -32,7 +32,7 @@ def get_number(s):
 
 
 def levenshtein(predictions, references):
-    _prediction = predictions[0][0].lower()
+    _prediction = predictions[0].lower().lstrip()
     prediction_number = get_number(_prediction)
 
     _prediction = re.sub('.? ?(</s>)* ?$', '', _prediction)
@@ -44,7 +44,7 @@ def levenshtein(predictions, references):
             if reference_number == prediction_number:
                 return 1
         else:
-            ld = distance(_prediction, reference.lower())
+            ld = distance(_prediction, reference.lower().lstrip())
             if ld < len(reference)/2:
                 return 1
     return 0
