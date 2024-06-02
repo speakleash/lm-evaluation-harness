@@ -13,6 +13,7 @@ generation_kwargs:
   until:
     - "</s>"
     - "[Koniec odpowiedzi]"
+    - "Masz za zadanie"
 metric_list:
   - metric: first_eqbench
     aggregation: mean
