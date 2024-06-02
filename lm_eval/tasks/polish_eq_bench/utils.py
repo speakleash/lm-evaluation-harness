@@ -3,18 +3,14 @@ import re
 
 def doc_to_target(doc):
     reference = eval(doc["reference_answer"])
-    reference_fullscale = eval(doc["reference_answer_fullscale"])
 
     target = ""
     for i in range(1, 5):
         emotion = reference[f"emotion{i}"]
         emotion_score = reference[f"emotion{i}_score"]
         target += f"{emotion}: {emotion_score}\n"
-    target += "\nWeryfikacja: <twoja opinia tutaj>\n\nZmienione oceny:\n"
-    for i in range(1, 5):
-        emotion = reference_fullscale[f"emotion{i}"]
-        emotion_score = reference_fullscale[f"emotion{i}_score"]
-        target += f"{emotion}: {emotion_score}\n"
+    target += "\n"
+
     return target
 
 
@@ -38,9 +34,16 @@ def score(docs, results):
     reference = eval(docs["reference_answer"])
     reference_fullscale = eval(docs["reference_answer_fullscale"])
     first_pass_score = calculate_score(reference, first_pass_answers)
-    revised_pass_score = calculate_score(reference_fullscale, first_pass_answers)
+    revised_pass_score = calculate_score(reference_fullscale, revised_answers)
     scores= {'first_'+k: v for k, v in first_pass_score.items()}
     scores.update({'revised_'+k: v for k, v in revised_pass_score.items()})
+    return scores
+
+def score_first(docs, results):
+    first_pass_answers = results[0]
+    reference = eval(docs["reference_answer"])
+    first_pass_score = calculate_score(reference, first_pass_answers)
+    scores= {'first_'+k: v for k, v in first_pass_score.items()}
     return scores
 
 def calculate_score(reference, user):

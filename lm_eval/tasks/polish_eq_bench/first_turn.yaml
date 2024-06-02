@@ -1,0 +1,12 @@
+include: default.yaml
+task: polish_eq_bench_first_turn
+validation_split: validation_first
+process_results: !function utils.score_first
+doc_to_target: !function utils.doc_to_target
+metric_list:
+  - metric: first_eqbench
+    aggregation: mean
+    higher_is_better: true
+  - metric: first_percent_parseable
+    aggregation: mean
+    higher_is_better: true
