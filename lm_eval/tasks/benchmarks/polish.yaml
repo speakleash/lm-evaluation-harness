@@ -21,3 +21,4 @@ task:
   - polish_polqa_closed_book
   - polish_polqa_open_book
   - polish_polqa_reranking_multiple_choice
+  - polish_poquad_open_book

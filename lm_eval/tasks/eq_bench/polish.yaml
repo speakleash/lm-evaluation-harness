@@ -1,3 +1,4 @@
 include: default.yaml
 task: polish_eq_bench
 dataset_path: speakleash/EQ-Bench-PL
+process_results: !function utils.score
