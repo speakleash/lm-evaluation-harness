@@ -40,7 +40,7 @@ def score(docs, results):
     return scores
 
 def score_first(docs, results):
-    first_pass_answers = dict(re.findall(r'([ \w]+):\s+(\d+)', results[0]))
+    first_pass_answers = dict(list(re.findall(r'([ \w]+):\s+(\d+)', results[0]))[:4])
     reference = eval(docs["reference_answer"])
     first_pass_score = calculate_score(reference, first_pass_answers)
     scores= {'first_'+k: v for k, v in first_pass_score.items()}
