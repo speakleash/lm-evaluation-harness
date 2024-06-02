@@ -13,6 +13,7 @@ from accelerate import (
     InitProcessGroupKwargs,
     find_executable_batch_size,
 )
+from huggingface_hub import HfApi
 from packaging import version
 from peft import PeftModel
 from peft import __version__ as PEFT_VERSION
@@ -107,8 +108,9 @@ class HFLM(TemplateLM):
         max_memory_per_gpu: Optional[Union[int, str]] = None,
         max_cpu_memory: Optional[Union[int, str]] = None,
         offload_folder: Optional[Union[str, os.PathLike]] = "./offload",
-        # PEFT and quantization options
+        # PEFT, delta weights and quantization options
         peft: Optional[str] = None,
+        delta: Optional[str] = None,
         autogptq: Optional[Union[bool, str]] = False,
         **kwargs,
     ) -> None:
@@ -210,6 +212,7 @@ class HFLM(TemplateLM):
                 max_cpu_memory=max_cpu_memory,
                 offload_folder=offload_folder,
                 peft=peft,
+                delta=delta,
                 autogptq=autogptq,
                 **kwargs,
             )
@@ -276,7 +279,10 @@ class HFLM(TemplateLM):
             )
 
         self._max_length = max_length
-
+        self.pretrained = pretrained
+        self.delta = delta
+        self.peft = peft
+        self.revision = revision
         self.batch_schedule = 1
         self.batch_sizes = {}
         self.max_batch_size = max_batch_size
@@ -486,8 +492,9 @@ class HFLM(TemplateLM):
         max_memory_per_gpu: Optional[Union[int, str]] = None,
         max_cpu_memory: Optional[Union[int, str]] = None,
         offload_folder: Optional[str] = "./offload",
-        # PEFT and quantization options
+        # PEFT, delta weights and quantization options
         peft: Optional[str] = None,
+        delta: Optional[str] = None,
         autogptq: Optional[Union[bool, str]] = False,
         **kwargs,
     ) -> None:
@@ -563,12 +570,41 @@ class HFLM(TemplateLM):
                 **model_kwargs,
             )
 
+        if peft and delta:
+            raise ValueError(
+                "Cannot use both 'peft' and 'delta' options at the same time."
+            )
+
         if peft:
             if model_kwargs.get("load_in_4bit", None):
-                assert PEFT_VERSION >= "0.4.0", "load_in_4bit requires peft >= 0.4.0"
+                if version.parse(PEFT_VERSION) < version.parse("0.4.0"):
+                    raise AssertionError("load_in_4bit requires peft >= 0.4.0")
             self._model = PeftModel.from_pretrained(
                 self._model, peft, revision=revision
             )
+        elif delta:
+            if autogptq:
+                eval_logger.warning(
+                    "Delta weights might trigger unexpected behavior when used with AutoGPTQ."
+                )
+            _model_delta = self.AUTO_MODEL_CLASS.from_pretrained(
+                delta,
+                revision=revision,
+                torch_dtype=get_dtype(dtype),
+                trust_remote_code=trust_remote_code,
+                **model_kwargs,
+            )
+            for name, param in self._model.state_dict().items():
+                try:
+                    param.data += _model_delta.state_dict()[name]
+                except KeyError:
+                    raise KeyError(f"Delta model is missing weights for layer: {name}")
+                except Exception as e:
+                    raise RuntimeError(
+                        f"Failed to add delta weights to layer {name}. Error: {e}"
+                    )
+
+            del _model_delta
 
         return None
 
@@ -680,14 +716,21 @@ class HFLM(TemplateLM):
         self, string: str, left_truncate_len=None, add_special_tokens=None
     ) -> List[int]:
         """ """
+        # default for None - empty dict, use predefined tokenizer param
+        # used for all models except for CausalLM or predefined value
+        special_tokens_kwargs = {}
+
+        # by default for CausalLM - false or self.add_bos_token is set
         if add_special_tokens is None:
             if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
-                add_special_tokens = False or self.add_bos_token
-            elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
-                # TODO: investigate best practices for enc-dec models + special tokens
-                add_special_tokens = True
+                special_tokens_kwargs = {
+                    "add_special_tokens": False or self.add_bos_token
+                }
+        # otherwise the method explicitly defines the value
+        else:
+            special_tokens_kwargs = {"add_special_tokens": add_special_tokens}
 
-        encoding = self.tokenizer.encode(string, add_special_tokens=add_special_tokens)
+        encoding = self.tokenizer.encode(string, **special_tokens_kwargs)
 
         # left-truncate the encoded context to be at most `left_truncate_len` tokens long
         if left_truncate_len:
@@ -706,17 +749,16 @@ class HFLM(TemplateLM):
         old_padding_side = self.tokenizer.padding_side
         self.tokenizer.padding_side = padding_side
 
+        add_special_tokens = {}
         if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
-            add_special_tokens = False or self.add_bos_token
-        elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
-            add_special_tokens = True
+            add_special_tokens = {"add_special_tokens": False or self.add_bos_token}
 
         encoding = self.tokenizer(
             strings,
             truncation=truncation,
             padding="longest",
             return_tensors="pt",
-            add_special_tokens=add_special_tokens,
+            **add_special_tokens,
         )
         if left_truncate_len:
             encoding["input_ids"] = encoding["input_ids"][:, -left_truncate_len:]
@@ -727,11 +769,8 @@ class HFLM(TemplateLM):
 
         return encoding["input_ids"], encoding["attention_mask"]
 
-    def tok_decode(self, tokens):
-        if self.AUTO_MODEL_CLASS == transformers.AutoModelForCausalLM:
-            return self.tokenizer.decode(tokens)
-        elif self.AUTO_MODEL_CLASS == transformers.AutoModelForSeq2SeqLM:
-            return self.tokenizer.decode(tokens, skip_special_tokens=True)
+    def tok_decode(self, tokens, skip_special_tokens=True):
+        return self.tokenizer.decode(tokens, skip_special_tokens=skip_special_tokens)
 
     def _model_call(self, inps, attn_mask=None, labels=None):
         """
@@ -1174,7 +1213,7 @@ class HFLM(TemplateLM):
                     f"Expected `kwargs` to be of type `dict` but got {type(gen_kwargs)}"
                 )
             # add EOS token to stop sequences
-            eos = self.tok_decode(self.eot_token_id)
+            eos = self.tok_decode(self.eot_token_id, skip_special_tokens=False)
             if not until:
                 until = [eos]
             else:
@@ -1237,3 +1276,44 @@ class HFLM(TemplateLM):
         pbar.close()
 
         return res
+
+    def get_model_info(self) -> dict:
+        """
+        Method to get Hugging Face model information for experiment reproducibility.
+        """
+
+        def get_model_num_params(model) -> int:
+            if hasattr(model, "num_parameters"):
+                return model.num_parameters()
+            if hasattr(model, "parameters"):
+                return sum(p.numel() for p in model.parameters())
+            else:
+                return -1
+
+        def get_model_dtype(model) -> str:
+            if hasattr(model, "dtype"):
+                return model.dtype
+            else:
+                return ""
+
+        def get_model_sha(pretrained: str, revision: str) -> str:
+            try:
+                model_info = HfApi().model_info(repo_id=pretrained, revision=revision)
+                return model_info.sha
+            except Exception as e:
+                eval_logger.warn(
+                    f"Failed to get model SHA for {pretrained} at revision {revision}. Error: {e}"
+                )
+                return ""
+
+        model_info = {
+            "model_num_parameters": get_model_num_params(self._model),
+            "model_dtype": get_model_dtype(self._model),
+            "model_revision": self.revision,
+            "model_sha": get_model_sha(self.pretrained, self.revision),
+        }
+        if self.peft:
+            model_info["peft_sha"] = get_model_sha(self.peft, self.revision)
+        if self.delta:
+            model_info["delta_sha"] = get_model_sha(self.delta, self.revision)
+        return model_info
