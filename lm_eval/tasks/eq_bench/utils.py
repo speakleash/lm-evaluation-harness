@@ -55,6 +55,23 @@ def calculate_score_fullscale(docs, results):
 
     return {"eqbench": final_score_percent, "percent_parseable": 100}
 
+def doc_to_target(doc):
+    reference = eval(doc["reference_answer"])
+    reference_fullscale = eval(doc["reference_answer_fullscale"])
+
+    target = ""
+    for i in range(1, 5):
+        emotion = reference[f"emotion{i}"]
+        emotion_score = reference[f"emotion{i}_score"]
+        target += f"{emotion}: {emotion_score}\n"
+    target += "\nWeryfikacja: <twoja opinia tutaj>\n\nZmienione oceny:\n"
+    for i in range(1, 5):
+        emotion = reference_fullscale[f"emotion{i}"]
+        emotion_score = reference_fullscale[f"emotion{i}_score"]
+        target += f"{emotion}: {emotion_score}\n"
+    return target
+
+
 def parse(text):
     first_pass_answers = {}
     revised_answers = {}
@@ -67,7 +84,7 @@ def parse(text):
     revised_match = re.search(r'Zmienione oceny:(.*?)$', text, re.DOTALL)
     if revised_match:
         revised_text = revised_match.group(1)
-        revised_answers = dict(re.findall(r'(\w+):\s+(\d+)', revised_text))
+        revised_answers = dict(list(re.findall(r'(\w+):\s+(\d+)', revised_text))[:4])
     return first_pass_answers, revised_answers
 
 def score(docs, results):
