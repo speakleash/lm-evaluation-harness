@@ -76,8 +76,8 @@ def score(docs, results):
     reference_fullscale = eval(docs["reference_answer_fullscale"])
     first_pass_score = calculate_score(reference, first_pass_answers)
     revised_pass_score = calculate_score(reference_fullscale, first_pass_answers)
-    scores= {'first'+k: v for k, v in first_pass_score.items()}
-    scores.update({'revised'+k: v for k, v in revised_pass_score.items()})
+    scores= {'first_'+k: v for k, v in first_pass_score.items()}
+    scores.update({'revised_'+k: v for k, v in revised_pass_score.items()})
     return scores
 
 def calculate_score(reference, user):

@@ -2,3 +2,16 @@ include: default.yaml
 task: polish_eq_bench
 dataset_path: speakleash/EQ-Bench-PL
 process_results: !function utils.score
+metric_list:
+  - metric: first_eqbench
+    aggregation: mean
+    higher_is_better: true
+  - metric: first_percent_parseable
+    aggregation: mean
+    higher_is_better: true
+  - metric: revised_eqbench
+    aggregation: mean
+    higher_is_better: true
+  - metric: revised_percent_parseable
+    aggregation: mean
+    higher_is_better: true
