@@ -27,3 +27,6 @@ metric_list:
   - metric: revised_percent_parseable
     aggregation: mean
     higher_is_better: true
+  - metric: average_eqbench
+    aggregation: mean
+    higher_is_better: true
