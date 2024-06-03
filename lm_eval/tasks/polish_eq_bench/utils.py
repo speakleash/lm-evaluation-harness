@@ -37,6 +37,8 @@ def score(docs, results):
     revised_pass_score = calculate_score(reference_fullscale, revised_answers)
     scores= {'first_'+k: v for k, v in first_pass_score.items()}
     scores.update({'revised_'+k: v for k, v in revised_pass_score.items()})
+    #add average score
+    scores['average_eqbench'] = (scores['first_eqbench'] + scores['revised_eqbench']) / 2
     return scores
 
 def score_first(docs, results):
