@@ -2,7 +2,7 @@ output_type: generate_until
 validation_split: validation
 doc_to_target: reference_answer_fullscale
 metadata:
-  version: 2.3
+  version: 2.4
 task: polish_eq_bench
 dataset_path: speakleash/EQ-Bench-PL
 process_results: !function utils.score
