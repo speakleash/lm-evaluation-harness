@@ -8,6 +8,7 @@ dataset_path: speakleash/EQ-Bench-PL
 process_results: !function utils.score
 doc_to_text: "{{prompt}}\nPierwsze oceny:\n"
 generation_kwargs:
+  max_gen_toks: 512
   do_sample: false
   temperature: 0.0
   until:
