@@ -1,4 +1,4 @@
-group: polish_generate
+group: polish_generate_few
 task:
   - polemo2_in
   - polemo2_out
