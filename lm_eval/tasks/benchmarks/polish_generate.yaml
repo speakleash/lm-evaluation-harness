@@ -12,3 +12,5 @@ task:
   - polish_polqa_closed_book
   - polish_polqa_open_book
   - polish_poquad_open_book
+  - polish_eq_bench
+  - polish_eq_bench_first_turn
