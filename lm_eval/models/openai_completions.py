@@ -39,6 +39,32 @@ def get_result(response) -> Tuple[float, bool]:
 
     return continuation_logprobs, is_greedy
 
+def get_result_local(response, ctxlen: int) -> Tuple[float, bool]:
+    """Process results from OpenAI API response.
+
+    :param response: dict
+        OpenAI API Response
+    :param ctxlen: int
+        Length of context (so we can slice them away and only keep the predictions)
+    :return:
+        continuation_logprobs: np.array
+            Log probabilities of continuation tokens
+        is_greedy: bool
+            whether argmax matches given continuation exactly
+    """
+    is_greedy = True
+    logprobs = response.logprobs.token_logprobs
+    continuation_logprobs = sum(logprobs[ctxlen:])
+
+    for i in range(ctxlen, len(response.logprobs.token_logprobs)):
+        token = response.logprobs.token_logprobs[i]
+        top_tokens = response.logprobs.top_logprobs[i]
+        top_token = max(top_tokens.keys(), key=lambda x: top_tokens[x])
+        if top_token != token:
+            is_greedy = False
+            break
+
+    return continuation_logprobs, is_greedy
 
 def oa_completion(client, chat: bool = False, **kwargs):
     """Query OpenAI API for completion.
@@ -73,7 +99,8 @@ def oa_completion(client, chat: bool = False, **kwargs):
     return completion()
 
 
-@register_model("openai-completions", "local-completions")
+
+@register_model("openai-completions")
 class OpenaiCompletionsLM(TemplateLM):
     _DEFAULT_MAX_LENGTH = 2048
 
@@ -340,6 +367,65 @@ class OpenaiCompletionsLM(TemplateLM):
             loglikelihoods.append(string_nll)
         return loglikelihoods
 
+@register_model("local-completions")
+class LocalCompletionsLM(OpenaiCompletionsLM):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        print('LLLOLCAL')
+
+    def _loglikelihood_tokens(
+        self, requests, disable_tqdm: bool = False
+    ) -> List[Tuple[float, bool]]:
+        res = []
+
+        def _collate(x):
+            # this doesn't efficiently handle last-token differences yet, but those are kinda annoying because
+            # it's not guaranteed that the 100 or so logprobs we get to see actually contain all the continuations
+            # we care about, and so we need some kind of backup for when it isn't
+            toks = x[1] + x[2]
+            return -len(toks), tuple(toks)
+
+        re_ord = utils.Reorderer(requests, _collate)
+
+        for chunk in tqdm(
+            list(lm_eval.models.utils.chunks(re_ord.get_reordered(), self.batch_size)),
+            disable=disable_tqdm,
+        ):
+            inps = []
+            ctxlens = []
+            for cache_key, context_enc, continuation_enc in chunk:
+                # max_length+1 because the API takes up to 2049 tokens, including the first context token
+                inp = (context_enc + continuation_enc)[-(self.max_length + 1) :]
+                # TODO: the logic is much simpler if we just look at the length of continuation tokens
+                ctxlen = len(context_enc) - max(
+                    0, len(context_enc) + len(continuation_enc) - (self.max_length + 1)
+                )
+
+                inps.append(inp)
+                ctxlens.append(ctxlen)
+
+            response = oa_completion(
+                client=self.client,
+                model=self.model,
+                prompt=inps,
+                echo=True,
+                max_tokens=0,
+                temperature=0.0,
+                logprobs=10,
+                seed=self.seed,
+            )
+
+            for resp, ctxlen, (cache_key, context_enc, continuation_enc) in zip(
+                response.choices, ctxlens, chunk
+            ):
+                answer = get_result_local(resp, ctxlen)
+
+                res.append(answer)
+
+                # partial caching
+                if cache_key is not None:
+                    self.cache_hook.add_partial("loglikelihood", cache_key, answer)
+        return re_ord.get_original(res)
 
 @register_model("openai-chat-completions", "local-chat-completions")
 class OpenaiChatCompletionsLM(LM):
