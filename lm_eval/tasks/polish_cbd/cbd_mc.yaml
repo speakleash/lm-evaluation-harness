@@ -2,12 +2,12 @@ task: polish_cbd_multiple_choice
 dataset_path: ptaszynski/PolishCyberbullyingDataset
 dataset_name: null
 output_type: multiple_choice
-training_split: v2_training_anonymized
+training_split: train
 validation_split: null
-test_split: v2_test_anonymized
-doc_to_text: "Wypowiedź: \"{{TEXT}}\"\nPytanie: Czy wypowiedź jest przejawem cyberprzemocy, lub jest krzywdząca wobec innych?\nOdpowiedz krótko \"Tak\" lub \"Nie\". Prawidłowa odpowiedź:"
-doc_to_target: "{{GENERAL TAG|int}}"
-doc_to_choice: ["Nie", "Tak"]
+test_split: test
+doc_to_text: "Wypowiedź: \"{{TEXT}}\"\nDo podanej wypowiedzi przyporządkuj jedną, najlepiej pasującą kategorię z podanych: nieszkodliwa, szyderstwo, obelga, insynuacja, groźba, molestowanie.\nKategoria:"
+doc_to_target: "{{{'szyderstwo': 1, 'obelga': 2, 'insynuacja': 3, 'grozba': 4, 'molestowanie': 5}.get(CATEGORIES, 0)}}"
+doc_to_choice: ["nieszkodliwa", "szyderstwo", "obelga", "insynuacja", "groźba", "molestowanie"]
 should_decontaminate: true
 doc_to_decontamination_query: "{{TEXT}}"
 metric_list:
