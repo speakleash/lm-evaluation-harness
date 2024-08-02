@@ -33,7 +33,7 @@ HIGHER_IS_BETTER_SYMBOLS = {
 
 
 def hash_string(string: str) -> str:
-    return hashlib.sha256(string.encode("utf-8")).hexdigest()
+    return hashlib.sha256(str(string).encode("utf-8")).hexdigest()
 
 
 def escaped_split(text, sep_char, maxsplit=-1):
