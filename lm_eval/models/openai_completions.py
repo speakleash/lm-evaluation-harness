@@ -371,7 +371,6 @@ class OpenaiCompletionsLM(TemplateLM):
 class LocalCompletionsLM(OpenaiCompletionsLM):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        print('LLLOLCAL')
 
     def _loglikelihood_tokens(
         self, requests, disable_tqdm: bool = False
