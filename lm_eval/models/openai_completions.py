@@ -57,10 +57,11 @@ def oa_completion(client, chat: bool = False, **kwargs):
         import traceback
 
         traceback.print_exc()
+        return ''
 
     @retry_on_specific_exceptions(
         on_exceptions=[openai.OpenAIError],
-        max_retries=None,  # retry forever, consider changing
+        max_retries=1,  # retry forever, consider changing
         on_exception_callback=_exception_callback,
     )
     def completion():

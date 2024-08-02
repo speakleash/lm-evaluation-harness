@@ -1,0 +1,28 @@
+task: polish_poquad_reranking
+dataset_path: enelpol/poquad
+dataset_name: null
+output_type: multiple_choice
+training_split: train
+validation_split: null
+test_split: validation
+doc_to_text: "Kontekst: {{context}} \n Pytanie: {{question}} \n Czy kontekst jest relewantny dla pytania? \n Odpowiedz krótko \"Tak\" lub \"Nie\". Prawidłowa odpowiedź:"
+doc_to_choice: ["Tak", "Nie"]
+doc_to_target: "{{is_impossible|int}}"
+should_decontaminate: true
+process_docs: !function utils.process_docs_open
+doc_to_decontamination_query: "{{context}} {{question}}"
+generation_kwargs:
+  until:
+    - "\n"
+    - "</s>"
+    - "<|im_end|>"
+  do_sample: false
+  temperature: 0.0
+  max_gen_toks: 50
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+  - metric: acc_norm
+    aggregation: mean
+    higher_is_better: true

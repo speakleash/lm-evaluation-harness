@@ -1,0 +1,27 @@
+task: polish_pes_regex
+dataset_path: amu-cai/PES-2018-2022
+dataset_name: null
+output_type: generate_until
+test_split: test
+doc_to_text: "Twoje zadanie to udzielenie odpowiedzi na test medyczny dla lekarzy. Spośród wszystkich odpowiedzi wybierz tylko jedną. Odpowiedz tylko i wyłącznie jedną literą.\n{{question}}\nPrawidłowa odpowiedź:"
+doc_to_target: label
+should_decontaminate: true
+doc_to_decontamination_query: "{{question}}"
+generation_kwargs:
+  until:
+    - "."
+    - ","
+    - ";"
+  do_sample: false
+  temperature: 0.0
+  max_gen_toks: 50
+filter_list:
+  - name: "score-first"
+    filter:
+      - function: "regex"
+        regex_pattern: "(\\b[ABCDE]\\b)"
+      - function: "take_first"
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    higher_is_better: true

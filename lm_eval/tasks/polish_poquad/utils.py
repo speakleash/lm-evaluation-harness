@@ -1,6 +1,29 @@
 """ Utility functions for the poquad task """
 import re
 from Levenshtein import distance
+import datasets
+
+COLUMNS_TO_REMOVE= []
+BRAK_INFORMACJI =  "Brak informacji"
+def process_docs_open(dataset: datasets.Dataset):
+    def _helper(doc):
+        if doc['is_impossible']:
+            doc["answers"] = {'text': [BRAK_INFORMACJI], 'answer_start': [0], 'generative_answer': [BRAK_INFORMACJI]}
+        return doc
+
+    used = set()
+
+    return dataset.remove_columns(COLUMNS_TO_REMOVE).filter(lambda example: (example['context'],example['question']) not in used and (used.add((example['context'],example['question'])) or True)).map(_helper)
+
+def process_docs_open_positive(dataset: datasets.Dataset):
+    def _helper(doc):
+        if doc['is_impossible']:
+            doc["answers"] = {'text': [BRAK_INFORMACJI], 'answer_start': [0], 'generative_answer': [BRAK_INFORMACJI]}
+        return doc
+
+    used = set()
+
+    return dataset.remove_columns(COLUMNS_TO_REMOVE).filter(lambda example: (not example['is_impossible']) and (example['context'],example['question']) not in used and (used.add((example['context'],example['question'])) or True)).map(_helper)
 
 
 def doc_to_target(doc):
@@ -10,6 +33,20 @@ def doc_to_target(doc):
     else:
         answer = "bez odpowiedzi"
     return " " + answer
+
+def doc_to_target2(doc):
+    # return doc['generative_answer']
+    answer_list = doc["answers"]["generative_answer"]
+    if len(answer_list) > 0:
+        answer = answer_list[0]
+    else:
+        answer = BRAK_INFORMACJI
+    return " " + answer
+
+
+def doc_to_target_reranking(doc):
+    return 0 if doc["is_impossible"] else 1
+
 
 # For non-numerical questions, we will assess textual similarity.
 # To that end, a Levenshtein distance will be computed between the two (lowercased) strings,
