@@ -387,6 +387,11 @@ def evaluate(
             raise ValueError("log_samples must be True for 'bypass' metric-only tasks")
     for task_output in eval_tasks:
         task: Task = task_output.task
+        # Convert eval_docs to list and shuffle before applying limit if limit is defined
+        eval_docs = list(task.eval_docs)
+        if limit is not None:
+            random.shuffle(eval_docs)
+        task.eval_docs = eval_docs  # Store shuffled docs back
         limit = get_sample_size(task, limit)
         task.build_all_requests(
             limit=limit,

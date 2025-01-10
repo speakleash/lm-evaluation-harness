@@ -225,6 +225,7 @@ class Task(abc.ABC):
         self._training_docs: Optional[list] = None
         self._fewshot_docs: Optional[list] = None
         self._instances: Optional[List[Instance]] = None
+        self._eval_docs = None  # Add storage for shuffled eval docs
 
         self._config: TaskConfig = TaskConfig({**config}) if config else TaskConfig()
 
@@ -661,6 +662,13 @@ class Task(abc.ABC):
 
     @property
     def eval_docs(self) -> Union[datasets.Dataset, List[dict]]:
+        """Get the appropriate split of the dataset to use for evaluation.
+        By default, this will return the test split if it exists, otherwise the validation split.
+
+        :return: A Dataset or list of examples to use for evaluation
+        """
+        if self._eval_docs is not None:
+            return self._eval_docs
         if self.has_test_docs():
             return self.test_docs()
         elif self.has_validation_docs():
@@ -669,6 +677,11 @@ class Task(abc.ABC):
             raise ValueError(
                 f"Task dataset (path={self.DATASET_PATH}, name={self.DATASET_NAME}) must have valid or test docs!"
             )
+
+    @eval_docs.setter
+    def eval_docs(self, value):
+        """Set the eval_docs property."""
+        self._eval_docs = value
 
     def doc_iterator(
         self, *, rank: int = 0, limit: Union[int, None] = None, world_size: int = 1
@@ -732,6 +745,10 @@ class ConfigurableTask(Task):
         self._metric_fn_kwargs = {}
         self._aggregation_list = {}
         self._higher_is_better = {}
+        self._training_docs = None
+        self._fewshot_docs = None
+        self._instances = None
+        self._eval_docs = None  # Add storage for shuffled eval docs
 
         if self.config.metric_list is None:
             # TODO: handle this in TaskConfig.__post_init__ ?
